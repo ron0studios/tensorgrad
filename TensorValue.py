@@ -1,5 +1,8 @@
 from math import exp
 from random import uniform
+import time # debugging
+
+import numpy as np
 
 # represents any non-scalar values
 class TensorValue:
@@ -27,6 +30,10 @@ class TensorValue:
         
         return tuple(self._piecewise(*(x[i] for x in inps), f=f) for i in range(len(inps[0])))
 
+    # numpy implementation 
+    def _mulMatrices(self, a, b):
+        return np.matmul(a,b).tolist()
+        pass
 
     def _dotVectors(self, a, b):
         return sum(self._piecewise(a,b,f = lambda x,y: x*y))
@@ -38,6 +45,12 @@ class TensorValue:
         other = other if isinstance(other, TensorValue) else TensorValue(other)
         assert other.shape == self.shape, f"Failed to add tensors of shape {self.shape} and {other.shape}"
         out = TensorValue(self._piecewise(self.data, other.data, f = lambda x,y: x+y), (self, other), '+')
+        
+        def _backward():
+            self.grad
+            other.grad
+
+
         return out
 
     def __mul__(self, other):
@@ -51,10 +64,11 @@ class TensorValue:
         assert len(self.shape) < 3 and len(other.shape) < 3, f"Cannot dot 2 tensors of rank {len(self.shape)}, {len(other.shape)}"
         assert self.shape[-1] == other.shape[0], f"Cannot dot 2 tensors of shape {self.shape} and {other.shape}"
 
-        out = TensorValue(tuple(tuple(self._dotVectors(self.data[d], other.T()[e]) 
-                                    for e in range(other.shape[-1])) 
-                                    for d in range(self.shape[0])),
-                                    (self,other), '.')
+        out = TensorValue(self._mulMatrices(self.data,other.data), (self,other), '.')
+        # out = TensorValue(tuple(tuple(self._dotVectors(self.data[d], other.T()[e]) 
+        #                             for e in range(other.shape[-1])) 
+        #                             for d in range(self.shape[0])),
+        #                             (self,other), '.')
         return out
 
     def dot(self,other):
@@ -86,8 +100,14 @@ class MLP:
 
 
 if __name__ == "__main__":
-    nn = MLP(1,[3,3,1])
-    a = nn(((1,),))
+    nn = MLP(1,[100,1000,1000,1000,1000,100,1])
+    time1 = time.time()
+
+    # before: 1.2s
+    for i in range(1):
+        a = nn(((1,),))
+    time2 = time.time()
+    print(time2-time1)
     # a = TensorValue(((1,2),(3,4)))
     # b = TensorValue(((5,),(6,)))
 
