@@ -41,9 +41,13 @@ class TensorValue:
         out = TensorValue(self._piecewise(self.data, other.data, f = lambda x,y: x+y), (self, other), '+')
         
         def _backward():
-            self.grad
-            other.grad
+            assert len(self.shape) == len(other.shape) == 2, "only supporting tensors of rank 2!"
+            assert self.shape[1] == other.shape[1] == 1, "only supporting column vectors now!"
 
+            self.grad = 1*out.grad
+            other.grad = 1*out.grad
+
+        out._backward = _backward
 
         return out
 
@@ -51,6 +55,17 @@ class TensorValue:
         other = other if isinstance(other, TensorValue) else TensorValue(other)
         assert other.shape == self.shape, f"Failed to add tensors of shape {self.shape} and {other.shape}"
         out = TensorValue(self._piecewise(self.data, other.data, f = lambda x,y: x*y), (self, other), '*')
+
+
+        def _backward():
+            assert len(self.shape) == len(other.shape) == 2, "only supporting tensors of rank 2!"
+            assert self.shape[1] == other.shape[1] == 1, "only supporting column vectors now!"
+
+            self.grad = other.grad*out.grad
+            other.grad = self.grad*out.grad
+
+        out._backward = _backward
+
         return out
 
     def __matmul__(self, other):
@@ -62,6 +77,9 @@ class TensorValue:
                                     for e in range(other.shape[-1])) 
                                     for d in range(self.shape[0])),
                                     (self,other), '.')
+        
+        def _bac
+
         return out
 
     def dot(self,other):
