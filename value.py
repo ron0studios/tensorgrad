@@ -11,6 +11,23 @@ class Value:
 
     def __repr__(self):
         return f"Value(data={self.data})"
+    
+    def __str__(self, level=0):
+        if level == 6: return ""
+        out = ""
+        out += "\t"*level+ "data:"+str(self.data)+" "+ "\n"
+        out += "\t"*level+ "op:"+self._op + "\n"
+        out += "\t"*level+ "grad:"+str(self.grad) + "\n"
+        out += "\t"*level+ "id:" + str(id(self)) + "\n"
+        out += "\t"*level+ "children:" + "\n"
+
+        
+        if not self._prev:
+            out += "\t"*level+"NONE" + "\n"
+        else:
+            for i in self._prev:
+                out += i.__str__(level+1) + "\n"
+        return out
 
     def __add__(self, other):
         other = other if isinstance(other, Value) else Value(other)
@@ -137,7 +154,7 @@ class MLP:
         return [p for layer in self.layers for p in layer.parameters()]
 
 if __name__ == "__main__":
-    n = MLP(3, [4,4,1])
+    n = MLP(3, [10,10,1])
 
     xs = [
             [2.0, 3.0, -1.0],
@@ -146,16 +163,21 @@ if __name__ == "__main__":
             [1.0, 1.0, -1.0]
         ]
     ys = [1.0, -1.0, -1.0, 1.0]
+    
+    xs = [tuple(uniform(-10,10) for d in range(3))for i in range(20)]
+    ys = [sum(xs[i]) for i in range(20)]
 
-    for i in range(100):
+    for i in range(1000):
         ypred = [n(x) for x in xs]
         loss = sum((yout - ygt)**2 for ygt, yout in zip(ys, ypred))
 
         for p in n.parameters():
             p.grad = 0
         loss.backward()
+        
+        print(loss.data)
 
         for p in n.parameters():
-            p.data += -0.01 * p.grad
+            p.data += -0.1 * p.grad
 
     pass
